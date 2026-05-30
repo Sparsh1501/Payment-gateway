@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="|Checkout · ${businessName}|">Checkout</title>
+    <style>
+        :root { --brand:#5b5bd6; --ink:#1a1a2e; --muted:#6b7280; --line:#e5e7eb; }
+        * { box-sizing: border-box; }
+        body { margin:0; font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+            background:#f3f4f6; color:var(--ink); }
+        .wrap { max-width:920px; margin:0 auto; padding:40px 20px; display:grid;
+            grid-template-columns: 1fr 1fr; gap:32px; }
+        @media (max-width:760px){ .wrap{ grid-template-columns:1fr; } }
+        .brand { font-weight:700; font-size:20px; color:var(--brand); margin-bottom:24px; }
+        .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:28px;
+            box-shadow:0 1px 2px rgba(0,0,0,.04); }
+        h2 { margin:0 0 18px; font-size:16px; }
+        .item { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px dashed var(--line); }
+        .item small { color:var(--muted); }
+        .total { display:flex; justify-content:space-between; font-weight:700; font-size:18px; padding-top:14px; }
+        label { display:block; font-size:13px; color:var(--muted); margin:14px 0 6px; }
+        input { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:8px; font-size:14px; }
+        .row { display:flex; gap:12px; }
+        .row > div { flex:1; }
+        button { width:100%; margin-top:22px; padding:13px; background:var(--brand); color:#fff;
+            border:none; border-radius:9px; font-size:15px; font-weight:600; cursor:pointer; }
+        button:hover { filter:brightness(1.05); }
+        .note { font-size:12px; color:var(--muted); margin-top:14px; text-align:center; }
+        .error { background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; padding:10px 12px;
+            border-radius:8px; font-size:13px; margin-bottom:14px; }
+        .badge { display:inline-block; padding:6px 12px; border-radius:999px; font-size:13px;
+            background:#fef9c3; color:#854d0e; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div>
+        <div class="brand" th:text="${businessName}">Acme Inc.</div>
+        <div class="card">
+            <h2>Order summary</h2>
+            <div th:each="item : ${lineItems}" class="item">
+                <div>
+                    <div th:text="${item.name}">Product</div>
+                    <small th:text="|Qty ${item.quantity} × ${item.amount}|">Qty 1 × 10.00</small>
+                </div>
+                <div th:text="${item.lineTotal()}">10.00</div>
+            </div>
+            <div class="total">
+                <span>Total</span>
+                <span th:text="|${total} ${currency}|">10.00 USD</span>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <h2>Payment details</h2>
+
+            <div th:if="${error}" class="error" th:text="${error}">Error</div>
+
+            <div th:if="${expired}">
+                <span class="badge">This checkout session has expired.</span>
+            </div>
+            <div th:if="${completed}">
+                <span class="badge" style="background:#dcfce7;color:#166534;">Payment already completed.</span>
+            </div>
+
+            <form th:if="${!expired and !completed}" th:action="@{/checkout/{id}(id=${sessionId})}" method="post">
+                <label for="name">Cardholder name</label>
+                <input id="name" name="cardName" placeholder="Jane Doe" required/>
+
+                <label for="card">Card number</label>
+                <input id="card" name="cardNumber" placeholder="4242 4242 4242 4242" value="4242 4242 4242 4242" required/>
+
+                <div class="row">
+                    <div>
+                        <label for="exp">Expiry</label>
+                        <input id="exp" name="expiry" placeholder="12/29" value="12/29" required/>
+                    </div>
+                    <div>
+                        <label for="cvc">CVC</label>
+                        <input id="cvc" name="cvc" placeholder="123" value="123" required/>
+                    </div>
+                </div>
+
+                <button type="submit" th:text="|Pay ${total} ${currency}|">Pay</button>
+                <div class="note">Secured by Payment Gateway · This is a sandbox checkout.</div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

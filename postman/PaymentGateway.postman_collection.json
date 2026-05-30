@@ -1,0 +1,227 @@
+{
+  "info": {
+    "name": "Payment Gateway Clone",
+    "description": "End-to-end flow: register -> login -> create payment intent -> confirm -> trigger webhook -> create refund.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "email", "value": "" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "merchantId", "value": "" },
+    { "key": "paymentIntentId", "value": "" },
+    { "key": "providerPaymentId", "value": "" },
+    { "key": "webhookEndpointId", "value": "" },
+    { "key": "refundId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Register merchant",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/v1/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "register"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"businessName\": \"Acme Co\",\n  \"email\": \"{{email}}\",\n  \"password\": \"supersecret\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": { "type": "text/javascript", "exec": [
+            "if (!pm.collectionVariables.get('email')) {",
+            "  pm.collectionVariables.set('email', 'merchant_' + Date.now() + '@example.com');",
+            "}"
+          ] }
+        },
+        {
+          "listen": "test",
+          "script": { "type": "text/javascript", "exec": [
+            "const b = pm.response.json();",
+            "pm.test('registered', () => pm.expect(b.success).to.be.true);",
+            "pm.collectionVariables.set('merchantId', b.data.merchantId);"
+          ] }
+        }
+      ]
+    },
+    {
+      "name": "2. Login",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"supersecret\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": { "type": "text/javascript", "exec": [
+            "const b = pm.response.json();",
+            "pm.test('logged in', () => pm.expect(b.data.accessToken).to.be.a('string'));",
+            "pm.collectionVariables.set('accessToken', b.data.accessToken);",
+            "pm.collectionVariables.set('refreshToken', b.data.refreshToken);"
+          ] }
+        }
+      ]
+    },
+    {
+      "name": "3. Create payment intent",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Idempotency-Key", "value": "{{$guid}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/v1/payment-intents", "host": ["{{baseUrl}}"], "path": ["api", "v1", "payment-intents"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 49.99,\n  \"currency\": \"USD\",\n  \"provider\": \"STRIPE\",\n  \"metadata\": { \"orderId\": \"order_123\" }\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": { "type": "text/javascript", "exec": [
+            "const b = pm.response.json();",
+            "pm.test('created', () => pm.expect(b.data.status).to.eql('CREATED'));",
+            "pm.collectionVariables.set('paymentIntentId', b.data.id);"
+          ] }
+        }
+      ]
+    },
+    {
+      "name": "4. Get payment intent",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/v1/payment-intents/{{paymentIntentId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "payment-intents", "{{paymentIntentId}}"] }
+      }
+    },
+    {
+      "name": "5. Confirm payment intent",
+      "request": {
+        "method": "POST",
+        "url": { "raw": "{{baseUrl}}/api/v1/payment-intents/{{paymentIntentId}}/confirm", "host": ["{{baseUrl}}"], "path": ["api", "v1", "payment-intents", "{{paymentIntentId}}", "confirm"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": { "type": "text/javascript", "exec": [
+            "const b = pm.response.json();",
+            "pm.test('succeeded', () => pm.expect(b.data.status).to.eql('SUCCESS'));",
+            "pm.collectionVariables.set('providerPaymentId', b.data.providerPaymentId);"
+          ] }
+        }
+      ]
+    },
+    {
+      "name": "6. Register webhook endpoint",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/v1/webhooks/endpoints", "host": ["{{baseUrl}}"], "path": ["api", "v1", "webhooks", "endpoints"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"url\": \"https://httpbin.org/post\",\n  \"events\": [\"payment.success\", \"payment.failed\", \"refund.created\", \"refund.success\"]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": { "type": "text/javascript", "exec": [
+            "const b = pm.response.json();",
+            "pm.collectionVariables.set('webhookEndpointId', b.data.id);"
+          ] }
+        }
+      ]
+    },
+    {
+      "name": "7. Trigger inbound Stripe webhook (fires outbound)",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Stripe-Signature", "value": "t=0,v1=sandbox" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/v1/providers/stripe/webhook", "host": ["{{baseUrl}}"], "path": ["api", "v1", "providers", "stripe", "webhook"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": { \"object\": { \"id\": \"{{providerPaymentId}}\" } }\n}"
+        }
+      }
+    },
+    {
+      "name": "8. List webhook deliveries",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/v1/webhooks/deliveries", "host": ["{{baseUrl}}"], "path": ["api", "v1", "webhooks", "deliveries"] }
+      }
+    },
+    {
+      "name": "9. Create refund (partial)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/v1/refunds", "host": ["{{baseUrl}}"], "path": ["api", "v1", "refunds"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"paymentIntentId\": \"{{paymentIntentId}}\",\n  \"amount\": 10.00,\n  \"reason\": \"requested_by_customer\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": { "type": "text/javascript", "exec": [
+            "const b = pm.response.json();",
+            "pm.test('refunded', () => pm.expect(b.data.status).to.eql('SUCCESS'));",
+            "pm.collectionVariables.set('refundId', b.data.id);"
+          ] }
+        }
+      ]
+    },
+    {
+      "name": "10. Get refund",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/v1/refunds/{{refundId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "refunds", "{{refundId}}"] }
+      }
+    },
+    {
+      "name": "11. Analytics summary",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/v1/analytics/summary", "host": ["{{baseUrl}}"], "path": ["api", "v1", "analytics", "summary"] }
+      }
+    },
+    {
+      "name": "12. Refresh access token",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/v1/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "refresh"] },
+        "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": { "type": "text/javascript", "exec": [
+            "const b = pm.response.json();",
+            "pm.collectionVariables.set('accessToken', b.data.accessToken);"
+          ] }
+        }
+      ]
+    }
+  ]
+}
