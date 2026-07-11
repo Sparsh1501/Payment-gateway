@@ -63,7 +63,7 @@ export default function Payments() {
           onClick={() => { setShowForm((v) => !v); setError(''); }}
           className="bg-brand text-white text-sm rounded-lg px-4 py-2 font-medium hover:bg-brand-dark"
         >
-          {showForm ? 'Cancel' : '+ New test payment'}
+          {showForm ? 'Cancel' : '+ Test with sample payment'}
         </button>
       </div>
 
