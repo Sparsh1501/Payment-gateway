@@ -7,9 +7,20 @@ plugins {
 group = 'com.paygateway'
 version = '0.0.1-SNAPSHOT'
 
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
+// java {
+// 	toolchain {
+// 		languageVersion = JavaLanguageVersion.of(17)
+// 		vendor = JvmVendorSpec.matching("Temurin|Adoptium|OpenJDK")
+// 	}
+// }
+
+sourceCompatibility = '17'
+targetCompatibility = '17'
+
+// Configure toolchain download repository
+gradle.taskGraph.whenReady { taskGraph ->
+	if (taskGraph.hasTask(":compileJava")) {
+		// Enable auto-download of toolchain
 	}
 }
 
@@ -21,6 +32,9 @@ configurations {
 
 repositories {
 	mavenCentral()
+	// Add Gradle's official toolchain repository
+	google()
+	gradlePluginPortal()
 }
 
 ext {
