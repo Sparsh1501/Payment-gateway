@@ -1,12 +1,7 @@
 package com.paygateway.config;
 
-import com.paygateway.auth.ApiKeyAuthenticationFilter;
-import com.paygateway.auth.JwtAuthenticationFilter;
-import com.paygateway.dto.ApiError;
-import com.paygateway.dto.ApiResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -22,7 +17,13 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.paygateway.auth.ApiKeyAuthenticationFilter;
+import com.paygateway.auth.JwtAuthenticationFilter;
+import com.paygateway.dto.ApiError;
+import com.paygateway.dto.ApiResponse;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
@@ -33,6 +34,16 @@ public class SecurityConfig {
     private final ObjectMapper objectMapper;
 
     private static final String[] PUBLIC_PATHS = {
+            "/",
+            "/index.html",
+            "/assets/**",
+            "/login",
+            "/register",
+            "/payments",
+            "/payments/*",
+            "/refunds",
+            "/webhooks",
+            "/api-keys",
             "/api/v1/auth/register",
             "/api/v1/auth/login",
             "/api/v1/auth/refresh",
