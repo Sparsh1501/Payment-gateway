@@ -9,13 +9,18 @@ export default function Register() {
   const [businessName, setBusinessName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   async function submit(e) {
     e.preventDefault();
-    setBusy(true);
     setError('');
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    setBusy(true);
     try {
       await register(businessName, email, password);
       navigate('/');
@@ -41,6 +46,9 @@ export default function Register() {
         <label className="block text-sm text-gray-600 mb-1">Password</label>
         <input className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-6" type="password"
           value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required />
+        <label className="block text-sm text-gray-600 mb-1">Confirm password</label>
+        <input className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-6" type="password"
+          value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} minLength={8} required />
         <button disabled={busy} className="w-full bg-brand text-white rounded-lg py-2.5 font-medium hover:bg-brand-dark disabled:opacity-60">
           {busy ? 'Creating…' : 'Create account'}
         </button>
