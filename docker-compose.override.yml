@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/workspace
+      - gradle-cache:/root/.gradle
+      - frontend-node-modules:/workspace/frontend/node_modules
+    command: []
+
+volumes:
+  gradle-cache:
+  frontend-node-modules:
