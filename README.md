@@ -57,14 +57,14 @@ postman/         Postman collection
 
 ---
 
-## Quick start (Docker — 5 containers)
+## Quick start (Docker)
 
 ```bash
-cp .env.example .env        # optionally edit secrets / provider keys
-docker compose up --build
+docker compose up --build app postgres redis
 ```
 
-Spins up **app**, **postgres**, **redis**, **prometheus**, **grafana**. Flyway runs on startup.
+Builds one application container containing the Spring Boot API and React dashboard, plus the
+PostgreSQL and Redis containers it requires. Flyway runs on startup.
 
 | Service     | URL                                            |
 |-------------|------------------------------------------------|

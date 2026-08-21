@@ -1,4 +1,13 @@
-# ---------- Build stage ----------
+# ---------- Frontend build stage ----------
+FROM node:22-alpine AS frontend-build
+WORKDIR /workspace/frontend
+
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# ---------- Backend build stage ----------
 FROM eclipse-temurin:17-jdk AS build
 WORKDIR /workspace
 
@@ -8,8 +17,9 @@ COPY gradle gradle
 COPY build.gradle settings.gradle ./
 RUN chmod +x gradlew && ./gradlew --version
 
-# Build the application
+# Build the application, including the compiled dashboard.
 COPY src src
+COPY --from=frontend-build /workspace/frontend/dist src/main/resources/static
 RUN ./gradlew clean bootJar -x test --no-daemon
 
 # ---------- Runtime stage ----------
